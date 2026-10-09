@@ -12,7 +12,8 @@ listen-only の CGEventTap で⌘キーを監視し、JIS の英数 / かなキ�
 | コマンド | 内容 |
 |---|---|
 | `make test` | Swift のテスト + `scripts/test-install.sh`（インストーラーのテスト） |
-| `shellcheck install.sh scripts/test-install.sh` | シェルスクリプトの lint |
+| `make lint` | `swift format lint --strict`（設定は `.swift-format`）と `shellcheck`。CI と同じ検査 |
+| `make fmt` | `swift format` で Swift のコードを整形する |
 | `make build VERSION=x.y.z` | `build/MacInputSwitcher.app` を作る（`VERSION` を省略すると `0.0.0-dev`） |
 | `make install` / `make uninstall` | 手元のビルドをインストール / 削除する。**ユーザーの実環境を変える** |
 | `make logs` | `~/Library/Logs/mac-input-switcher.log` を追う |
@@ -24,6 +25,7 @@ listen-only の CGEventTap で⌘キーを監視し、JIS の英数 / かなキ�
 - `Tests/InputSwitcherCoreTests/` — swift-testing のテスト
 - `install.sh` — `curl | bash` で使うインストーラー。`make install` / `make uninstall` もこれを呼ぶ
 - `scripts/test-install.sh` — インストーラーのテスト（システムコマンドはスタブに置き換える）
+- `.github/workflows/ci.yml` — PR と main への push で `make lint` / `make test` / `make build` を実行する
 - `.github/workflows/release.yml` — `v*` タグの push でビルドし、Releases に公開する
 - `Resources/Info.plist` — `__BUNDLE_ID__` / `__VERSION__` はビルド時に置換される
 

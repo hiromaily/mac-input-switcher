@@ -58,10 +58,12 @@ curl -fsSL https://raw.githubusercontent.com/hiromaily/mac-input-switcher/main/i
 
 ## 開発
 
-Command Line Tools（`xcode-select --install`）が必要です。
+Command Line Tools（`xcode-select --install`）が必要です。`make lint` には shellcheck（`brew install shellcheck`）も必要です。
 
 ```sh
 make test        # ユニットテストと install.sh のテスト
+make lint        # swift format と shellcheck による検査（CI と同じ）
+make fmt         # Swift のコードを整形
 make install     # ビルドして install.sh --app 経由でインストール（権限は維持されます）
 make uninstall   # アンインストール（権限エントリも削除されます）
 make logs        # ログを表示

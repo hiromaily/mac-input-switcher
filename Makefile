@@ -6,11 +6,18 @@ VERSION       := 0.0.0-dev
 APP           := build/$(APP_NAME).app
 LOG_FILE      := $(HOME)/Library/Logs/$(EXEC_NAME).log
 
-.PHONY: test build install uninstall logs clean
+.PHONY: test lint fmt build install uninstall logs clean
 
 test:
 	swift test
 	scripts/test-install.sh
+
+lint:
+	swift format lint --strict --recursive Package.swift Sources Tests
+	shellcheck install.sh scripts/test-install.sh
+
+fmt:
+	swift format format --in-place --recursive Package.swift Sources Tests
 
 build:
 	swift build -c release

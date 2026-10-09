@@ -12,6 +12,7 @@ paths:
 - 判定ロジック（何をするかを決める処理）は `Sources/InputSwitcherCore/` に、副作用のない形で置く。swift-testing（`@Suite` / `@Test` / `#expect`）でテストを先に書き、失敗を確認してから実装する
 - 副作用のある macOS 呼び出し（イベントの送信、イベントタップ、権限 API、`Process` / `execv` など）は、`main.swift` に置くか、プロトコルの裏に置く。既存の例: キーの合成は `InputSourceSwitching` の実装 `JISKeyInputSourceSwitcher`（Core 内、CoreGraphics を使用）で、キーコードの選択や目印の判定はテストしている
 - Core が CoreGraphics の型（`CGEventType` / `CGEventFlags`）を使うのは許容している（`EventTranslator`）。既存コードを「Core から CoreGraphics を追い出す」目的で動かさない
+- 書式は `swift format`（設定は `.swift-format`）に従う。変更後は `make fmt` で整形し、`make lint` を通す。ルールを無効にするときは、コードの慣習に合わない理由があるものに限る
 - Swift 6 言語モード、`platforms: [.macOS(.v15)]`、サードパーティへの依存なし。Command Line Tools だけでビルドできる状態を保つ（Xcode に依存しない）
 
 ## イベント

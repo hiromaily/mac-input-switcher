@@ -13,10 +13,10 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Lint installer
+      - name: Lint
         run: |
           brew install shellcheck
-          shellcheck install.sh scripts/test-install.sh
+          make lint
 
       - name: Test
         run: make test

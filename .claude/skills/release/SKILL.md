@@ -31,7 +31,7 @@ test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" && echo "main is i
 ```bash
 make test
 env PATH="/bin:/usr/bin:$PATH" scripts/test-install.sh   # macOS 標準の /bin/bash 3.2 で実行する
-shellcheck install.sh scripts/test-install.sh
+make lint
 ```
 
 CI は bash 5 で動くので、bash 3.2 でしか見つからない問題はここで確かめます。
