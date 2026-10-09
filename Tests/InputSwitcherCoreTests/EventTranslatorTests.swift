@@ -45,9 +45,9 @@ import Testing
         #expect(event == .keyDown)
     }
 
-    @Test(arguments: [Int64(102), 104])
-    func synthesizedEisuKanaKeysAreIgnored(keyCode: Int64) {
-        #expect(EventTranslator.translate(type: .keyDown, keyCode: keyCode, flags: [], timestamp: 0) == nil)
+    @Test(arguments: [Int64(102), 104])  // physical JIS Eisu / Kana keys
+    func physicalEisuKanaKeysAreKeyDown(keyCode: Int64) {
+        #expect(EventTranslator.translate(type: .keyDown, keyCode: keyCode, flags: [], timestamp: 0) == .keyDown)
     }
 
     @Test(arguments: [CGEventType.leftMouseDown, .rightMouseDown, .otherMouseDown])

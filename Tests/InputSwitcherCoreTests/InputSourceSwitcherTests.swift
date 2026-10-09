@@ -9,4 +9,9 @@ import Testing
     @Test func japaneseUsesKanaKey() {
         #expect(JISKeyInputSourceSwitcher.keyCode(for: .switchToJapanese) == 104)
     }
+
+    @Test func recognizesOnlyItsOwnEventMarker() {
+        #expect(JISKeyInputSourceSwitcher.isSynthesized(userData: JISKeyInputSourceSwitcher.eventMarker))
+        #expect(!JISKeyInputSourceSwitcher.isSynthesized(userData: 0))
+    }
 }

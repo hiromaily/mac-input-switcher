@@ -3,8 +3,11 @@ import CoreGraphics
 import Foundation
 import InputSwitcherCore
 
+// Only used from the main thread (startup and the main run loop).
+nonisolated(unsafe) let timestampFormatter = ISO8601DateFormatter()
+
 func log(_ message: String) {
-    let timestamp = ISO8601DateFormatter().string(from: Date())
+    let timestamp = timestampFormatter.string(from: Date())
     FileHandle.standardError.write(Data("\(timestamp) \(message)\n".utf8))
 }
 
@@ -50,6 +53,9 @@ let callback: CGEventTapCallBack = { _, type, event, userInfo in
     if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
         log("event tap disabled (type \(type.rawValue)); re-enabling")
         if let tap = context.tap { CGEvent.tapEnable(tap: tap, enable: true) }
+        return Unmanaged.passUnretained(event)
+    }
+    if JISKeyInputSourceSwitcher.isSynthesized(userData: event.getIntegerValueField(.eventSourceUserData)) {
         return Unmanaged.passUnretained(event)
     }
 
