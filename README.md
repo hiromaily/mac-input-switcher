@@ -50,5 +50,5 @@ make test        # ユニットテスト
 
 ## トラブルシュート
 
-- 動かない: `make logs` で `permission is missing` が出ていないか確認し、権限を付け直す
+- 動かない: `make logs` で `waiting for permissions` が出ていないか確認し、権限を付け直す（許可されれば再起動なしで動き出します）
 - 権限一覧に古いエントリが残る: 一度削除してから `make install` し直す

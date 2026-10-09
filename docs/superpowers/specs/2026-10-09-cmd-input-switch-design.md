@@ -114,7 +114,7 @@ enum Action { case switchToEnglish, switchToJapanese }
 1. 権限チェック
    - 入力監視: `CGPreflightListenEventAccess()`、不足時 `CGRequestListenEventAccess()`
    - アクセシビリティ: `AXIsProcessTrustedWithOptions`（プロンプト付き）
-   - いずれか不足ならログを出して終了コード 1 で終了（LaunchAgent が再起動する）
+   - 起動時に一度だけプロンプトを出し、以降はプロンプトなしで 2 秒間隔でポーリングして許可を待つ（終了しないので再起動ごとのダイアログ連発を防ぐ）
 2. `CGEvent.tapCreate` で listen-only タップを作成
    - 対象: `flagsChanged`, `keyDown`, `leftMouseDown`, `rightMouseDown`, `otherMouseDown`
 3. イベント変換
@@ -148,7 +148,7 @@ designated requirement が「Bundle ID + 証明書」となるため、再ビル
 
 - Label: `com.hiromaily.mac-input-switcher`
 - `RunAtLoad = true`, `KeepAlive = true`
-- `ThrottleInterval = 10`（権限不足時の再起動ループを抑制）
+- `ThrottleInterval = 10`（異常終了時の再起動ループを抑制）
 - 標準出力/エラー: `~/Library/Logs/mac-input-switcher.log`
 
 ### Info.plist
@@ -167,7 +167,7 @@ designated requirement が「Bundle ID + 証明書」となるため、再ビル
 
 | 状況 | 挙動 |
 |---|---|
-| 権限不足 | プロンプト表示・ログ出力・exit 1、LaunchAgent が 10 秒間隔で再起動 |
+| 権限不足 | 起動時に一度だけプロンプト表示、不足内容が変わったときだけログ出力し、許可されるまで常駐して待機 |
 | タップ作成失敗 | ログ出力・exit 1 |
 | タップがシステムに無効化された | 即時再有効化・ログ出力 |
 | Secure Input 中 | イベントが届かず何もしない（許容） |

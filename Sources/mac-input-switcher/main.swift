@@ -14,19 +14,33 @@ final class TapContext {
     var tap: CFMachPort?
 }
 
-func hasRequiredPermissions() -> Bool {
-    var granted = true
+/// Returns the names of missing permissions. System prompts are shown only when `prompt` is true.
+func missingPermissions(prompt: Bool) -> [String] {
+    var missing: [String] = []
     if !CGPreflightListenEventAccess() {
-        _ = CGRequestListenEventAccess()
-        log("Input Monitoring permission is missing")
-        granted = false
+        if prompt { _ = CGRequestListenEventAccess() }
+        missing.append("Input Monitoring")
     }
-    let options = ["AXTrustedCheckOptionPrompt": true] as CFDictionary
+    let options = ["AXTrustedCheckOptionPrompt": prompt] as CFDictionary
     if !AXIsProcessTrustedWithOptions(options) {
-        log("Accessibility permission is missing")
-        granted = false
+        missing.append("Accessibility")
     }
-    return granted
+    return missing
+}
+
+/// Prompts once, then polls silently until every permission is granted.
+func waitForPermissions(pollInterval: TimeInterval = 2) {
+    var missing = missingPermissions(prompt: true)
+    var reported: [String] = []
+    while !missing.isEmpty {
+        if missing != reported {
+            log("waiting for permissions: \(missing.joined(separator: ", "))")
+            reported = missing
+        }
+        Thread.sleep(forTimeInterval: pollInterval)
+        missing = missingPermissions(prompt: false)
+    }
+    if !reported.isEmpty { log("all permissions granted") }
 }
 
 let callback: CGEventTapCallBack = { _, type, event, userInfo in
@@ -51,7 +65,7 @@ let callback: CGEventTapCallBack = { _, type, event, userInfo in
     return Unmanaged.passUnretained(event)
 }
 
-guard hasRequiredPermissions() else { exit(1) }
+waitForPermissions()
 
 let context = TapContext()
 let eventTypes: [CGEventType] = [.flagsChanged, .keyDown, .leftMouseDown, .rightMouseDown, .otherMouseDown]
