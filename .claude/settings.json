@@ -2,7 +2,7 @@
   "permissions": {
     "allow": [
       "Bash(make test)",
-      "Bash(make build *)",
+      "Bash(make build)",
       "Bash(swift build *)",
       "Bash(swift test *)",
       "Bash(shellcheck *)",
@@ -20,6 +20,7 @@
       "Bash(make install)",
       "Bash(make uninstall)",
       "Bash(./install.sh *)",
+      "Bash(bash *)",
       "Bash(tccutil *)",
       "Bash(security delete-identity *)",
       "Bash(launchctl *)",

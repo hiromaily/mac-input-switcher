@@ -34,7 +34,7 @@ launchctl print gui/$(id -u)/com.hiromaily.mac-input-switcher | grep -E '^\s*(st
 
 ## 3. 権限の許可を依頼する（`waiting` のとき）
 
-システム設定 > プライバシーとセキュリティ で、**入力監視** と **アクセシビリティ** の両方で `MacInputSwitcher` を ON にしてもらいます。そのあと、ログをポーリングします。
+システム設定 > プライバシーとセキュリティ で、**入力監視** と **アクセシビリティ** の両方で `MacInputSwitcher` を ON にしてもらいます。そのあと、ログをポーリングします。ユーザーの操作待ちで最大 5 分かかるので、Bash ツールの `timeout` を 320000 以上にします（既定の 2 分では途中で打ち切られます）。
 
 ```bash
 for i in $(seq 1 150); do tail -n 1 ~/Library/Logs/mac-input-switcher.log | grep -q started && break; sleep 2; done

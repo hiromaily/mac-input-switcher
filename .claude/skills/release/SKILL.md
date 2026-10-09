@@ -45,14 +45,22 @@ git push origin vX.Y.Z
 
 ## 5. ワークフローの完了を待つ
 
+シェルの変数は Bash の呼び出しをまたいで残りません。以下のブロックは、それぞれ 1 回の呼び出しで実行してください。`SCRATCH` には、セッションの scratchpad ディレクトリのパスを書き込んでから実行します（未指定なら `mktemp -d` で作ります）。出力が長いので、ファイルに保存して末尾だけ読みます。完了まで数分かかるので、Bash ツールの `timeout` は 600000 にします。
+
 ```bash
-sleep 10
-ID=$(gh run list -R hiromaily/mac-input-switcher --branch vX.Y.Z --limit 1 --json databaseId -q '.[0].databaseId')
+SCRATCH="${SCRATCH:-$(mktemp -d)}"; TAG=vX.Y.Z
+ID=""
+for i in $(seq 1 30); do
+  ID=$(gh run list -R hiromaily/mac-input-switcher --branch "$TAG" --event push --limit 1 --json databaseId -q '.[0].databaseId')
+  [ -n "$ID" ] && break; sleep 2
+done
+[ -n "$ID" ] || { echo "run for $TAG not found"; exit 1; }
+echo "run=$ID"
 gh run watch "$ID" -R hiromaily/mac-input-switcher --exit-status > "$SCRATCH/release-run.log" 2>&1; echo "exit=$?"
 tail -20 "$SCRATCH/release-run.log"
 ```
 
-先に `SCRATCH` に、セッションの scratchpad ディレクトリ（なければ `mktemp -d` で作ったディレクトリ）のパスを入れておきます。出力が長いので、ファイルに保存して末尾だけ読みます。失敗したら `gh run view "$ID" -R hiromaily/mac-input-switcher --log-failed` で原因を調べます。
+失敗したら、表示された `run=` の ID を使って `gh run view <ID> -R hiromaily/mac-input-switcher --log-failed` で原因を調べます。
 
 ## 6. 公開されたリリースを検証する
 
@@ -66,13 +74,20 @@ gh release view vX.Y.Z -R hiromaily/mac-input-switcher --json isPrerelease,asset
 
 通常のリリースなら、最新リリースの URL から取得して中身を確かめます。
 
+作業ディレクトリをリポジトリの外に移さないよう、サブシェルの中で実行します。
+
 ```bash
-D="$SCRATCH/release-check" && rm -rf "$D" && mkdir -p "$D" && cd "$D"
-curl -fsSL -O https://github.com/hiromaily/mac-input-switcher/releases/latest/download/MacInputSwitcher.zip
-curl -fsSL -O https://github.com/hiromaily/mac-input-switcher/releases/latest/download/MacInputSwitcher.zip.sha256
-shasum -a 256 -c MacInputSwitcher.zip.sha256
-ditto -x -k MacInputSwitcher.zip u
-/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' u/MacInputSwitcher.app/Contents/Info.plist   # X.Y.Z であること
+SCRATCH="${SCRATCH:-$(mktemp -d)}"
+(
+  set -e
+  D="$SCRATCH/release-check"; rm -rf "$D"; mkdir -p "$D"; cd "$D"
+  URL=https://github.com/hiromaily/mac-input-switcher/releases/latest/download
+  curl -fsSL -O "$URL/MacInputSwitcher.zip"
+  curl -fsSL -O "$URL/MacInputSwitcher.zip.sha256"
+  shasum -a 256 -c MacInputSwitcher.zip.sha256
+  ditto -x -k MacInputSwitcher.zip u
+  /usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' u/MacInputSwitcher.app/Contents/Info.plist   # X.Y.Z であること
+)
 ```
 
 ## 7. 手元のアプリを更新する（ユーザーの了承を得てから）

@@ -19,8 +19,8 @@ listen-only の CGEventTap で⌘キーを監視し、JIS の英数 / かなキ�
 
 ## 構成
 
-- `Sources/InputSwitcherCore/` — macOS に依存しない判定ロジック（単独押しの判定、イベントの変換、権限待ちの判断）。ここをテストする
-- `Sources/mac-input-switcher/main.swift` — macOS API との境界（イベントタップ、権限チェック、キーの合成）
+- `Sources/InputSwitcherCore/` — テスト対象のライブラリ。単独押しの判定（`CommandTapDetector`）と権限待ちの判断（`PermissionWatch`）は macOS 非依存。イベントの変換（`EventTranslator`）は CoreGraphics の型を使い、英数 / かなキーの合成（`JISKeyInputSourceSwitcher`）は `InputSourceSwitching` プロトコルの実装として CoreGraphics でイベントを送る
+- `Sources/mac-input-switcher/main.swift` — 実行ファイル。イベントタップの作成、権限チェック（`CGPreflightListenEventAccess` / `AXIsProcessTrusted`）、`Process` / `execv` による権限待ちの再起動
 - `Tests/InputSwitcherCoreTests/` — swift-testing のテスト
 - `install.sh` — `curl | bash` で使うインストーラー。`make install` / `make uninstall` もこれを呼ぶ
 - `scripts/test-install.sh` — インストーラーのテスト（システムコマンドはスタブに置き換える）
