@@ -31,19 +31,60 @@ func missingPermissions(prompt: Bool) -> [String] {
     return missing
 }
 
+/// Asks a fresh child process which permissions are missing; nil if the probe failed.
+func probeMissingPermissions() -> [String]? {
+    guard let path = Bundle.main.executablePath else { return nil }
+    let process = Process()
+    process.executableURL = URL(fileURLWithPath: path)
+    process.arguments = [PermissionProbe.argument]
+    let pipe = Pipe()
+    process.standardOutput = pipe
+    do {
+        try process.run()
+    } catch {
+        log("permission probe failed to start: \(error)")
+        return nil
+    }
+    let output = pipe.fileHandleForReading.readDataToEndOfFile()
+    process.waitUntilExit()
+    guard process.terminationStatus == 0 else {
+        log("permission probe exited with status \(process.terminationStatus)")
+        return nil
+    }
+    return PermissionProbe.parse(String(decoding: output, as: UTF8.self))
+}
+
+/// Replaces this process with a fresh copy so that newly granted permissions take effect.
+func restartSelf() -> Never {
+    if let path = Bundle.main.executablePath {
+        execv(path, CommandLine.unsafeArgv)
+    }
+    log("restart failed (errno \(errno)); exiting so launchd restarts the agent")
+    exit(1)
+}
+
 /// Prompts once, then polls silently until every permission is granted.
 func waitForPermissions(pollInterval: TimeInterval = 2) {
-    var missing = missingPermissions(prompt: true)
-    var reported: [String] = []
-    while !missing.isEmpty {
-        if missing != reported {
-            log("waiting for permissions: \(missing.joined(separator: ", "))")
-            reported = missing
+    let missing = missingPermissions(prompt: true)
+    guard !missing.isEmpty else { return }
+    var watch = PermissionWatch()
+    var step = watch.update(missing: missing)
+    while true {
+        switch step {
+        case .wait(let message):
+            if let message { log(message) }
+            Thread.sleep(forTimeInterval: pollInterval)
+            step = probeMissingPermissions().map { watch.update(missing: $0) } ?? .wait(log: nil)
+        case .restart(let message):
+            log(message)
+            restartSelf()
         }
-        Thread.sleep(forTimeInterval: pollInterval)
-        missing = missingPermissions(prompt: false)
     }
-    if !reported.isEmpty { log("all permissions granted") }
+}
+
+if CommandLine.arguments.dropFirst().first == PermissionProbe.argument {
+    for name in missingPermissions(prompt: false) { print(name) }
+    exit(0)
 }
 
 let callback: CGEventTapCallBack = { _, type, event, userInfo in
