@@ -10,6 +10,8 @@
 
 **Spec:** `docs/superpowers/specs/2026-10-09-cmd-input-switch-design.md`
 
+> **Note:** 実装時点の作業記録。以後の変更（権限待ちの常駐化、合成イベントの目印による除外など）は反映していないため、現在の仕様は Spec とソースを参照すること。
+
 ## Global Constraints
 
 - macOS 15 以降 / Apple Silicon。`Package.swift` は `platforms: [.macOS(.v15)]`、`swift-tools-version:6.0`（Swift 6 言語モード）

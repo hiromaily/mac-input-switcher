@@ -7,7 +7,7 @@ Karabiner-Elements のような仮想ドライバーを使わず、macOS 標準 
 
 - macOS 15 以降 / Apple Silicon
 - Command Line Tools（`xcode-select --install`）
-- 入力ソースに「ABC」と「日本語（ことえり）」を追加済み
+- 入力ソースに「ABC」と「日本語 - ローマ字入力」を追加済み
 
 ## セットアップ
 
@@ -16,11 +16,8 @@ scripts/create-signing-cert.sh   # 初回のみ。ログインパスワードを
 make install
 ```
 
-システム設定 > プライバシーとセキュリティ で **入力監視** と **アクセシビリティ** に `MacInputSwitcher` を許可し、再起動します:
-
-```sh
-launchctl kickstart -k gui/$(id -u)/com.hiromaily.mac-input-switcher
-```
+初回起動時に許可ダイアログが出るので、システム設定 > プライバシーとセキュリティ で **入力監視** と **アクセシビリティ** に `MacInputSwitcher` を許可します。
+許可されると再起動なしで動き出します（`make logs` で `mac-input-switcher started` を確認）。
 
 ## 使い方
 
@@ -46,9 +43,11 @@ make test        # ユニットテスト
 1. テキストエディタで左⌘単独押し → 英語、右⌘単独押し → 日本語に切り替わる
 2. ⌘C / ⌘V / ⌘Tab / ⌘+クリックで入力モードが変わらない
 3. `make install` で再インストール後も権限ダイアログが出ず動作する
-4. `pkill -f mac-input-switcher` 後、数秒で自動復帰する（`make logs` で `started` を確認）
+4. `launchctl kill TERM gui/$(id -u)/com.hiromaily.mac-input-switcher` 後、数秒で自動復帰する（`make logs` で `started` を確認）
 
 ## トラブルシュート
 
 - 動かない: `make logs` で `waiting for permissions` が出ていないか確認し、権限を付け直す（許可されれば再起動なしで動き出します）
 - 権限一覧に古いエントリが残る: 一度削除してから `make install` し直す
+- 「<ターミナルアプリ> would like to receive keystrokes」と出る: `.build/release/mac-input-switcher` をターミナルから直接実行すると、権限の要求元がターミナルアプリになります。常駐は LaunchAgent（`make install`）経由で行ってください
+- 許可ダイアログが閉じられない: `killall universalAccessAuthWarn` で閉じられます（必要時に macOS が再起動します）

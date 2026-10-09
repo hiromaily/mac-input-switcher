@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.hiromaily.mac-input-switcher</string>
+    <string>__BUNDLE_ID__</string>
     <key>ProgramArguments</key>
     <array>
         <string>__APP_EXEC__</string>

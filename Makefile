@@ -19,7 +19,7 @@ build:
 	swift build -c release
 	rm -rf $(APP)
 	mkdir -p $(APP)/Contents/MacOS
-	cp Resources/Info.plist $(APP)/Contents/Info.plist
+	sed -e "s|__BUNDLE_ID__|$(BUNDLE_ID)|" Resources/Info.plist > $(APP)/Contents/Info.plist
 	cp .build/release/$(EXEC_NAME) $(APP)/Contents/MacOS/$(EXEC_NAME)
 
 sign: build
@@ -31,11 +31,12 @@ install: sign
 	mkdir -p $(INSTALL_DIR) $(dir $(AGENT_PLIST)) $(dir $(LOG_FILE))
 	rm -rf $(INSTALLED_APP)
 	cp -R $(APP) $(INSTALLED_APP)
-	sed -e "s|__APP_EXEC__|$(INSTALLED_APP)/Contents/MacOS/$(EXEC_NAME)|" \
+	sed -e "s|__BUNDLE_ID__|$(BUNDLE_ID)|" \
+	    -e "s|__APP_EXEC__|$(INSTALLED_APP)/Contents/MacOS/$(EXEC_NAME)|" \
 	    -e "s|__LOG__|$(LOG_FILE)|" \
 	    LaunchAgent/$(BUNDLE_ID).plist > $(AGENT_PLIST)
 	launchctl bootstrap gui/$(USER_ID) $(AGENT_PLIST)
-	@echo "Installed. Grant Input Monitoring and Accessibility to $(APP_NAME) if prompted."
+	@echo "Installed. Grant Input Monitoring and Accessibility to $(APP_NAME) when prompted."
 
 uninstall:
 	-launchctl bootout gui/$(USER_ID)/$(BUNDLE_ID) 2>/dev/null

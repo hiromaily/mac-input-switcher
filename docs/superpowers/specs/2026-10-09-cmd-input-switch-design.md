@@ -12,7 +12,7 @@ US キーボードで、左⌘単独押しで英語入力、右⌘単独押し�
 ## 要件
 
 - 左⌘を単独で押して離す → 英語入力（ABC）に切り替える
-- 右⌘を単独で押して離す → 日本語入力（ことえり）に切り替える
+- 右⌘を単独で押して離す → 日本語入力（日本語 - ローマ字入力）に切り替える
 - ⌘C 等のショートカット、⌘+クリック、⌘の長押しでは切り替えない
 - ⌘キー本来の動作は一切変更しない（イベントの書き換え・破棄をしない）
 - ドライバー・システム拡張・サードパーティ製ランタイムに依存しない
@@ -29,7 +29,7 @@ US キーボードで、左⌘単独押しで英語入力、右⌘単独押し�
 
 - macOS 15 以降 / Apple Silicon
 - Command Line Tools のみ（Xcode 不要）、Swift 6.1
-- 入力ソース: ABC と ことえり（ローマ字入力）
+- 入力ソース: ABC と 日本語 - ローマ字入力
 
 ## アーキテクチャ
 
@@ -105,6 +105,7 @@ enum Action { case switchToEnglish, switchToJapanese }
 - `switchToEnglish()`: JIS 英数キー（`kVK_JIS_Eisu` = 102）の keyDown/keyUp を `CGEvent.post(tap: .cghidEventTap)` で送る
 - `switchToJapanese()`: JIS かなキー（`kVK_JIS_Kana` = 104）を同様に送る
 - 合成イベントの修飾フラグは空にする（⌘付きにならないように）
+- 合成イベントの `eventSourceUserData` に目印（`eventMarker`）を入れ、タップ側で自身の合成イベントを無視できるようにする
 - プロトコル `InputSourceSwitching` を定義し、将来 `TISSelectInputSource` 方式へ差し替え可能にする
 
 `TISSelectInputSource` を採用しない理由: 日本語 IME への切り替えでメニューバー表示と実際の入力モードが食い違う既知の問題があるため。
@@ -120,7 +121,7 @@ enum Action { case switchToEnglish, switchToJapanese }
 3. イベント変換
    - `flagsChanged` かつ keycode 55（左⌘）/ 54（右⌘）: flags の `maskCommand` 有無と左右デバイスフラグ（`NX_DEVICELCMDKEYMASK` 0x08 / `NX_DEVICERCMDKEYMASK` 0x10）で down/up を判定
    - その他の `flagsChanged` → `otherModifierChanged`
-   - `keyDown` → `keyDown`（ただし自身が合成した keycode 102/104 は無視）
+   - `keyDown` → `keyDown`（自身の合成イベントは `eventSourceUserData` の目印でタップのコールバックが変換前に除外する）
    - マウス押下 → `mouseDown`
 4. `tapDisabledByTimeout` / `tapDisabledByUserInput` 受信時は `CGEvent.tapEnable(tap:enable:true)` で再有効化しログに記録
 5. `CFRunLoopRun()` で常駐
@@ -161,7 +162,7 @@ designated requirement が「Bundle ID + 証明書」となるため、再ビル
 1. `scripts/create-signing-cert.sh`
 2. `make install`
 3. システム設定 > プライバシーとセキュリティ で「入力監視」「アクセシビリティ」に MacInputSwitcher を許可
-4. `launchctl kickstart -k gui/$UID/com.hiromaily.mac-input-switcher`
+4. 許可されると再起動なしでタップが有効になる
 
 ## エラーハンドリング
 
