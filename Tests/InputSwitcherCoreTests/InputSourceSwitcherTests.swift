@@ -1,4 +1,5 @@
 import Testing
+
 @testable import InputSwitcherCore
 
 @Suite struct InputSourceSwitcherTests {

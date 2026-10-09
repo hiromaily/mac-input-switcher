@@ -118,14 +118,16 @@ let context = TapContext()
 let eventTypes: [CGEventType] = [.flagsChanged, .keyDown, .leftMouseDown, .rightMouseDown, .otherMouseDown]
 let mask = eventTypes.reduce(CGEventMask(0)) { $0 | (CGEventMask(1) << $1.rawValue) }
 
-guard let tap = CGEvent.tapCreate(
-    tap: .cgSessionEventTap,
-    place: .headInsertEventTap,
-    options: .listenOnly,
-    eventsOfInterest: mask,
-    callback: callback,
-    userInfo: Unmanaged.passUnretained(context).toOpaque()
-) else {
+guard
+    let tap = CGEvent.tapCreate(
+        tap: .cgSessionEventTap,
+        place: .headInsertEventTap,
+        options: .listenOnly,
+        eventsOfInterest: mask,
+        callback: callback,
+        userInfo: Unmanaged.passUnretained(context).toOpaque()
+    )
+else {
     log("failed to create event tap")
     exit(1)
 }

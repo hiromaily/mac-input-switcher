@@ -1,4 +1,5 @@
 import Testing
+
 @testable import InputSwitcherCore
 
 @Suite struct PermissionProbeTests {
@@ -18,8 +19,9 @@ import Testing
 @Suite struct PermissionWatchTests {
     @Test func firstUpdateLogsWhatIsMissing() {
         var watch = PermissionWatch()
-        #expect(watch.update(missing: ["Input Monitoring", "Accessibility"])
-            == .wait(log: "waiting for permissions: Input Monitoring, Accessibility"))
+        #expect(
+            watch.update(missing: ["Input Monitoring", "Accessibility"])
+                == .wait(log: "waiting for permissions: Input Monitoring, Accessibility"))
     }
 
     @Test func unchangedMissingDoesNotLogAgain() {
