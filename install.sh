@@ -76,7 +76,8 @@ download_app() {
 }
 
 has_identity() {
-    security find-identity -v -p codesigning | grep -q "\"$SIGN_IDENTITY\""
+    # Not grep -q: exiting early would SIGPIPE security and fail under pipefail.
+    security find-identity -v -p codesigning | grep -F "\"$SIGN_IDENTITY\"" >/dev/null
 }
 
 # Creates a self-signed code signing identity in the login keychain so that
@@ -208,12 +209,13 @@ EON
 uninstall() {
     log "Uninstalling $APP_NAME"
     launchctl bootout "$DOMAIN/$BUNDLE_ID" >/dev/null 2>&1 || true
-    rm -f "$AGENT_PLIST"
-    rm -rf "$INSTALLED_APP"
+    # Reset before deleting the app: tccutil resolves the bundle ID through it.
     local service
     for service in ListenEvent Accessibility PostEvent; do
         tccutil reset "$service" "$BUNDLE_ID" >/dev/null 2>&1 || true
     done
+    rm -f "$AGENT_PLIST"
+    rm -rf "$INSTALLED_APP"
     cat <<EOU
 Uninstalled. The signing certificate '$SIGN_IDENTITY' was kept in your login keychain.
 To remove it as well:
@@ -244,6 +246,9 @@ main() {
                 ;;
         esac
     done
+
+    [[ "$(id -u)" != "0" ]] \
+        || die "do not run as root; run the command without sudo as the user who will use the app"
 
     if [[ "$mode" == "uninstall" ]]; then
         uninstall
