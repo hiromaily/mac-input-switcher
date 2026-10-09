@@ -27,7 +27,13 @@ paths:
 
 ## ログ
 
-- `mac-input-switcher started`、`waiting for permissions: …`、`all permissions granted; restarting` は、README のトラブルシュートと `verify-on-device` スキルが参照している。文言を変えるときは、これらも直す
+- 定義している場所
+  - `mac-input-switcher started`: `Sources/mac-input-switcher/main.swift`
+  - `waiting for permissions: …` / `all permissions granted; restarting`: `Sources/InputSwitcherCore/PermissionWatch.swift`。文言は `Tests/InputSwitcherCoreTests/PermissionWatchTests.swift` が検証している
+- 参照している場所
+  - README のトラブルシュート: `waiting for permissions`
+  - `verify-on-device` / `release` スキルのログ確認: 3 つとも
+- 文言を変えるときは、定義・テスト・参照している場所をまとめて直す
 
 ## 動作確認
 

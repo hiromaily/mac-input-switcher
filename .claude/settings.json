@@ -3,10 +3,12 @@
     "allow": [
       "Bash(make test)",
       "Bash(make build)",
+      "Bash(make build VERSION=*)",
       "Bash(swift build *)",
       "Bash(swift test *)",
       "Bash(shellcheck *)",
       "Bash(scripts/test-install.sh)",
+      "Bash(env PATH=\"/bin:/usr/bin:$PATH\" scripts/test-install.sh)",
       "Bash(git status *)",
       "Bash(git diff *)",
       "Bash(git log *)",
@@ -19,6 +21,8 @@
     "ask": [
       "Bash(make install)",
       "Bash(make uninstall)",
+      "Bash(make build VERSION=* install*)",
+      "Bash(make build VERSION=* uninstall*)",
       "Bash(./install.sh *)",
       "Bash(bash *)",
       "Bash(tccutil *)",
@@ -29,7 +33,11 @@
     ],
     "deny": [
       "Bash(git push --force *)",
-      "Bash(git push -f *)"
+      "Bash(git push -f *)",
+      "Bash(git push * --force*)",
+      "Bash(git push --force-with-lease*)",
+      "Bash(git push * -f*)",
+      "Bash(git push * +*)"
     ]
   }
 }

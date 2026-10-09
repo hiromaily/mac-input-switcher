@@ -19,12 +19,20 @@ description: mac-input-switcher を実機にインストールし、入力監視
 | 公開済みのリリース | `curl -fsSL https://raw.githubusercontent.com/hiromaily/mac-input-switcher/main/install.sh \| bash` |
 | 権限なしの状態からの初回体験 | 先に `make uninstall`（または `--uninstall`）を実行してから、上のどちらか |
 
-## 2. ログを確認する
+## 2. インストールして、新しいログを確認する
+
+ログファイルは入れ直しても消えません（`--uninstall` のときだけ消えます）。インストール前の行数を記録し、それより後に書かれた行だけを見ます。前のプロセスの `started` を読み違えないためです。インストールとログの確認は、1 回の Bash 呼び出しで実行します（シェルの変数は呼び出しをまたいで残りません）。
 
 ```bash
-sleep 4; tail -n 3 ~/Library/Logs/mac-input-switcher.log
+LOG=~/Library/Logs/mac-input-switcher.log
+BEFORE=$(wc -l 2>/dev/null < "$LOG" || echo 0)
+make install   # 手順 1 で選んだコマンドに置き換える
+for i in $(seq 1 20); do [ "$(wc -l 2>/dev/null < "$LOG" || echo 0)" -gt "$BEFORE" ] && break; sleep 1; done
+tail -n +"$((BEFORE + 1))" "$LOG"
 launchctl print gui/$(id -u)/com.hiromaily.mac-input-switcher | grep -E '^\s*(state|pid) ='
 ```
+
+20 秒たっても新しい行がなければ、新しいプロセスが起動していません。成功扱いにせず、`launchctl print` の結果と合わせて調べます。
 
 | ログ | 意味 |
 |---|---|
@@ -41,7 +49,7 @@ for i in $(seq 1 150); do tail -n 1 ~/Library/Logs/mac-input-switcher.log | grep
 tail -n 4 ~/Library/Logs/mac-input-switcher.log
 ```
 
-許可すれば、再起動しなくても `all permissions granted; restarting` → `started` と進むのが正しい動きです。
+この時点の最終行は、新しいプロセスが書いた `waiting for permissions` です。そのため、最終行が `started` に変わったかどうかで判断できます。許可すれば、再起動しなくても `all permissions granted; restarting` → `started` と進むのが正しい動きです。
 
 ## 4. 動作を確認してもらう
 
@@ -49,7 +57,7 @@ tail -n 4 ~/Library/Logs/mac-input-switcher.log
 
 ## 5. 権限が維持されることを確認する（必要なとき）
 
-同じ方法でもう一度インストールし、権限ダイアログが出ずにすぐ `started` になることを確認します。
+手順 2 のブロックをもう一度実行します。新しく書かれた行が `started` だけで、`waiting for permissions` が出ないことを確認します。権限ダイアログが出ていないことも、ユーザーに確かめてもらいます。
 
 ## ハマりどころ
 

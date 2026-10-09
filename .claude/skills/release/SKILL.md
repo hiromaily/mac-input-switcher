@@ -11,19 +11,30 @@ argument-hint: "[version, e.g. v0.2.3]"
 
 ## 1. main を最新にする
 
+切り替える前に、今いるブランチに未コミットの変更がないことを確かめます。
+
 ```bash
-git switch main && git pull
 git status --short   # 何も出ないこと
 ```
 
-未コミットの変更があれば止めて、ユーザーに確認します。
+何か出たら止めて、ユーザーに確認します。続けて main を最新にし、手元の main が origin/main と一致することを確かめます。push していないコミットがあると、レビューを通っていないコードでリリースしてしまうためです。
+
+```bash
+git switch main && git pull --ff-only
+test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" && echo "main is in sync with origin/main"
+```
+
+`in sync` が出なければ止めて、ユーザーに確認します。
 
 ## 2. テストを通す
 
 ```bash
 make test
+env PATH="/bin:/usr/bin:$PATH" scripts/test-install.sh   # macOS 標準の /bin/bash 3.2 で実行する
 shellcheck install.sh scripts/test-install.sh
 ```
+
+CI は bash 5 で動くので、bash 3.2 でしか見つからない問題はここで確かめます。
 
 ## 3. バージョンを決める
 
@@ -94,10 +105,17 @@ SCRATCH="${SCRATCH:-$(mktemp -d)}"
 
 実環境を変えるので、実行してよいか先に確認します。
 
+ログファイルは入れ直しても消えないので、更新前の行数を記録し、それより後に書かれた行だけを見ます（前のプロセスの `started` を読み違えないため）。1 回の Bash 呼び出しで実行します。
+
 ```bash
+LOG=~/Library/Logs/mac-input-switcher.log
+BEFORE=$(wc -l 2>/dev/null < "$LOG" || echo 0)
 curl -fsSL https://raw.githubusercontent.com/hiromaily/mac-input-switcher/main/install.sh | bash
-sleep 4; tail -n 2 ~/Library/Logs/mac-input-switcher.log   # 権限ダイアログなしで started になること
+for i in $(seq 1 20); do [ "$(wc -l 2>/dev/null < "$LOG" || echo 0)" -gt "$BEFORE" ] && break; sleep 1; done
+tail -n +"$((BEFORE + 1))" "$LOG"   # 権限ダイアログなしで started になること
 ```
+
+新しい行が `waiting for permissions` なら、更新で権限が外れています。成功扱いにせず、ユーザーに報告します。
 
 そのあと、左右の⌘で入力が切り替わるかをユーザーに確認してもらいます。
 
