@@ -57,7 +57,9 @@ expect_failure "checksum mismatch" "checksum mismatch for MacInputSwitcher.zip" 
 expect_failure "missing release" "failed to download" \
     env BASE_URL="file://$TMP/none" bash "$INSTALL"
 expect_failure "pinned version uses its own URL" "download/v9.9.9/MacInputSwitcher.zip" \
-    env BASE_URL="file://$TMP/release" VERSION=v9.9.9 bash "$INSTALL"
+    env BASE_URL="file://$TMP/none" MAC_INPUT_SWITCHER_VERSION=v9.9.9 bash "$INSTALL"
+expect_failure "generic VERSION variable is ignored" "latest/download/MacInputSwitcher.zip" \
+    env BASE_URL="file://$TMP/none" VERSION=v9.9.9 bash "$INSTALL"
 
 # The following tests run install.sh against stubbed system commands and a
 # throwaway HOME, so the real keychain, launchd and TCC are never touched.
@@ -67,6 +69,10 @@ mkdir -p "$STUBS"
 cat > "$STUBS/launchctl" <<'EOS'
 #!/usr/bin/env bash
 echo "launchctl $*" >> "$CALLS"
+if [[ "$1" == "bootstrap" && -n "${FAIL_BOOTSTRAP:-}" ]]; then
+    echo "Bootstrap failed: 5: Input/output error" >&2
+    exit 5
+fi
 [[ "$1" != "print" ]]
 EOS
 cat > "$STUBS/tccutil" <<'EOS'
@@ -121,8 +127,15 @@ expect_calls() {
 }
 
 home="$TMP/home-uninstall"
-mkdir -p "$home/Applications/MacInputSwitcher.app" "$home/Library/LaunchAgents"
+mkdir -p "$home/Applications/MacInputSwitcher.app" "$home/Library/LaunchAgents" "$home/Library/Logs"
+echo "old log" > "$home/Library/Logs/mac-input-switcher.log"
 run_stubbed "$home" --uninstall || true
+if [[ -e "$home/Library/Logs/mac-input-switcher.log" ]]; then
+    echo "FAIL uninstall removes the log file"
+    failures=$((failures + 1))
+else
+    echo "ok   uninstall removes the log file"
+fi
 expect_calls "uninstall resets TCC while the app is still registered" \
     "^tccutil reset ListenEvent .* app_present=yes" present
 
@@ -132,6 +145,33 @@ chmod +x "$TMP/Fake.app/Contents/MacOS/mac-input-switcher"
 run_stubbed "$TMP/home-identity" --app "$TMP/Fake.app" || true
 expect_calls "existing identity is kept with many identities listed" \
     "^security (delete-identity|import)" absent
+
+# A HOME containing XML special characters must still yield a valid plist.
+home="$TMP/home & <xml>"
+run_stubbed "$home" --app "$TMP/Fake.app" || true
+if plutil -lint "$home/Library/LaunchAgents/com.hiromaily.mac-input-switcher.plist" >/dev/null 2>&1; then
+    echo "ok   plist is valid when HOME has XML special characters"
+else
+    echo "FAIL plist is valid when HOME has XML special characters"
+    failures=$((failures + 1))
+fi
+
+expect_failure "bootstrap failure points to Login Items" "Login Items" \
+    env FAIL_BOOTSTRAP=1 HOME="$TMP/home-bootstrap" PATH="$STUBS:$PATH" CALLS="$CALLS" \
+    bash "$INSTALL" --app "$TMP/Fake.app"
+
+# A download cut off inside the last line must not run anything.
+last="$(tail -n 1 "$INSTALL")"
+{ sed '$d' "$INSTALL"; printf '%s' "${last%%\"*}"; } > "$TMP/truncated.sh"
+out="$(env BASE_URL="file://$TMP/none" HOME="$TMP/home-truncated" PATH="$STUBS:$PATH" CALLS="$CALLS" \
+    bash "$TMP/truncated.sh" --uninstall 2>&1)" || true
+if [[ "$out" == *"==>"* ]]; then
+    echo "FAIL truncated download runs nothing: got"
+    printf '%s\n' "$out" | sed 's/^/    /'
+    failures=$((failures + 1))
+else
+    echo "ok   truncated download runs nothing"
+fi
 
 expect_failure "refuses to install as root" "do not run as root" \
     env FAKE_UID=0 HOME="$TMP/home-root" PATH="$STUBS:$PATH" CALLS="$CALLS" bash "$INSTALL" --app "$TMP/Fake.app"

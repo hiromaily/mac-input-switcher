@@ -4,8 +4,8 @@
 #   curl -fsSL https://raw.githubusercontent.com/hiromaily/mac-input-switcher/main/install.sh | bash
 #   curl -fsSL https://raw.githubusercontent.com/hiromaily/mac-input-switcher/main/install.sh | bash -s -- --uninstall
 #
-# Everything runs inside main(), invoked on the last line, so a truncated
-# download never executes a partial script.
+# Everything runs inside main(), invoked from a brace group on the last line,
+# so a download cut off anywhere is a syntax error and executes nothing.
 set -euo pipefail
 
 REPO="hiromaily/mac-input-switcher"
@@ -38,7 +38,7 @@ Usage: install.sh [--app <path>] [--uninstall] [--help]
   --help          Show this help
 
 Environment:
-  VERSION=v0.2.0  Install a specific release instead of the latest
+  MAC_INPUT_SWITCHER_VERSION=v0.2.0  Install a specific release instead of the latest
 EOU
 }
 
@@ -53,8 +53,9 @@ preflight() {
 
 release_url() {
     local base="${BASE_URL:-https://github.com/$REPO/releases}"
-    if [[ -n "${VERSION:-}" ]]; then
-        printf '%s/download/%s/%s' "$base" "$VERSION" "$ASSET"
+    local version="${MAC_INPUT_SWITCHER_VERSION:-}"
+    if [[ -n "$version" ]]; then
+        printf '%s/download/%s/%s' "$base" "$version" "$ASSET"
     else
         printf '%s/latest/download/%s' "$base" "$ASSET"
     fi
@@ -152,7 +153,15 @@ stop_agent() {
     die "the running agent did not stop"
 }
 
+# sed, not ${var//}: bash 5.2 expands & in the replacement to the match.
+xml_escape() {
+    printf '%s' "$1" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g'
+}
+
 write_plist() {
+    local program log_file
+    program="$(xml_escape "$INSTALLED_APP/Contents/MacOS/$EXEC_NAME")"
+    log_file="$(xml_escape "$LOG_FILE")"
     cat > "$AGENT_PLIST" <<EOP
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -162,7 +171,7 @@ write_plist() {
     <string>$BUNDLE_ID</string>
     <key>ProgramArguments</key>
     <array>
-        <string>$INSTALLED_APP/Contents/MacOS/$EXEC_NAME</string>
+        <string>$program</string>
     </array>
     <key>RunAtLoad</key>
     <true/>
@@ -173,9 +182,9 @@ write_plist() {
     <key>ProcessType</key>
     <string>Interactive</string>
     <key>StandardOutPath</key>
-    <string>$LOG_FILE</string>
+    <string>$log_file</string>
     <key>StandardErrorPath</key>
-    <string>$LOG_FILE</string>
+    <string>$log_file</string>
 </dict>
 </plist>
 EOP
@@ -188,7 +197,8 @@ install_app() {
     rm -rf "$INSTALLED_APP"
     ditto "$STAGED_APP" "$INSTALLED_APP"
     write_plist
-    launchctl bootstrap "$DOMAIN" "$AGENT_PLIST" || die "failed to start the LaunchAgent"
+    launchctl bootstrap "$DOMAIN" "$AGENT_PLIST" \
+        || die "failed to start the LaunchAgent. If $APP_NAME is turned off in System Settings > General > Login Items (Allow in the Background), turn it on and run the installer again."
 }
 
 print_next_steps() {
@@ -214,7 +224,7 @@ uninstall() {
     for service in ListenEvent Accessibility PostEvent; do
         tccutil reset "$service" "$BUNDLE_ID" >/dev/null 2>&1 || true
     done
-    rm -f "$AGENT_PLIST"
+    rm -f "$AGENT_PLIST" "$LOG_FILE"
     rm -rf "$INSTALLED_APP"
     cat <<EOU
 Uninstalled. The signing certificate '$SIGN_IDENTITY' was kept in your login keychain.
@@ -273,4 +283,4 @@ main() {
     print_next_steps
 }
 
-main "$@"
+{ main "$@"; }
