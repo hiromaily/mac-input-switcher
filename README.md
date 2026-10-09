@@ -22,7 +22,7 @@ curl -fsSL https://raw.githubusercontent.com/hiromaily/mac-input-switcher/main/i
 特定のバージョンを入れる場合:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/hiromaily/mac-input-switcher/main/install.sh | VERSION=v0.2.0 bash
+curl -fsSL https://raw.githubusercontent.com/hiromaily/mac-input-switcher/main/install.sh | MAC_INPUT_SWITCHER_VERSION=v0.2.0 bash
 ```
 
 ## アップデート
@@ -35,7 +35,7 @@ curl -fsSL https://raw.githubusercontent.com/hiromaily/mac-input-switcher/main/i
 curl -fsSL https://raw.githubusercontent.com/hiromaily/mac-input-switcher/main/install.sh | bash -s -- --uninstall
 ```
 
-アプリ、自動起動の設定、入力監視・アクセシビリティの許可を削除します。署名用証明書はキーチェーンに残ります。不要なら `security delete-identity -c mac-input-switcher-local` で削除できます。
+アプリ、自動起動の設定、ログファイル、入力監視・アクセシビリティの許可を削除します。署名用証明書はキーチェーンに残ります。不要なら `security delete-identity -c mac-input-switcher-local` で削除できます。
 
 ## 使い方
 
@@ -52,6 +52,8 @@ curl -fsSL https://raw.githubusercontent.com/hiromaily/mac-input-switcher/main/i
 - 動かない: `tail -f ~/Library/Logs/mac-input-switcher.log` で `waiting for permissions` が出ていないか確認し、権限を付け直してください。許可されれば再起動なしで動き出します
 - 権限一覧に古いエントリが残る: 一度削除してから、インストールのコマンドを再実行してください
 - 「the certificate was not trusted」で止まった: パスワードダイアログをキャンセルした場合に出ます。もう一度インストールのコマンドを実行してください
+- 「failed to start the LaunchAgent」で止まった: システム設定 > 一般 > ログイン項目 の「バックグラウンドでの実行を許可」で `MacInputSwitcher` がオフになっていないか確認し、オンにしてからインストールのコマンドを再実行してください
+- 「codesign がキーチェーン内のキーにアクセスしようとしています」と出た: インストーラーが作った署名用の鍵を使うためです。ログインパスワードを入力し「常に許可」を選んでください
 - 許可ダイアログが閉じられない: `killall universalAccessAuthWarn` で閉じられます（必要時に macOS が再起動します）
 
 ## 開発
@@ -74,7 +76,7 @@ git tag v0.2.0
 git push origin v0.2.0
 ```
 
-GitHub Actions がテスト・ビルドを行い、`MacInputSwitcher.zip` とその sha256 を Releases に公開します。`install.sh` は、既定で最新リリースを取得します。
+GitHub Actions がテスト・ビルドを行い、`MacInputSwitcher.zip` とその sha256 を Releases に公開します。`v1.0.0-rc1` のように `-` を含むタグはプレリリースとして公開され、`install.sh` の既定（最新リリース）の対象になりません。`install.sh` は、既定で最新リリースを取得します。
 
 ### 手動テスト
 

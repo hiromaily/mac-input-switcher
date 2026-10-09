@@ -34,6 +34,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # Tags like v1.0.0-rc1 are prereleases, which releases/latest skips.
+          prerelease=""
+          if [[ "$GITHUB_REF_NAME" == *-* ]]; then prerelease="--prerelease"; fi
           gh release create "$GITHUB_REF_NAME" \
             MacInputSwitcher.zip MacInputSwitcher.zip.sha256 \
-            --generate-notes
+            --generate-notes $prerelease
