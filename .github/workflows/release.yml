@@ -1,0 +1,39 @@
+name: release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lint installer
+        run: |
+          brew install shellcheck
+          shellcheck install.sh scripts/test-install.sh
+
+      - name: Test
+        run: make test
+
+      - name: Build
+        run: make build VERSION="${GITHUB_REF_NAME#v}"
+
+      - name: Package
+        run: |
+          codesign --force --sign - build/MacInputSwitcher.app
+          ditto -c -k --keepParent build/MacInputSwitcher.app MacInputSwitcher.zip
+          shasum -a 256 MacInputSwitcher.zip > MacInputSwitcher.zip.sha256
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            MacInputSwitcher.zip MacInputSwitcher.zip.sha256 \
+            --generate-notes
