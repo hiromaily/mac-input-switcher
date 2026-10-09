@@ -1,7 +1,7 @@
 APP_NAME      := MacInputSwitcher
 EXEC_NAME     := mac-input-switcher
 BUNDLE_ID     := com.hiromaily.mac-input-switcher
-VERSION       ?= 0.0.0-dev
+VERSION       := 0.0.0-dev
 
 APP           := build/$(APP_NAME).app
 LOG_FILE      := $(HOME)/Library/Logs/$(EXEC_NAME).log
