@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(make test)",
+      "Bash(make build *)",
+      "Bash(swift build *)",
+      "Bash(swift test *)",
+      "Bash(shellcheck *)",
+      "Bash(scripts/test-install.sh)",
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(gh run list *)",
+      "Bash(gh run view *)",
+      "Bash(gh run watch *)",
+      "Bash(gh release view *)",
+      "Bash(gh release list *)"
+    ],
+    "ask": [
+      "Bash(make install)",
+      "Bash(make uninstall)",
+      "Bash(./install.sh *)",
+      "Bash(tccutil *)",
+      "Bash(security delete-identity *)",
+      "Bash(launchctl *)",
+      "Bash(git tag *)",
+      "Bash(git push *)"
+    ],
+    "deny": [
+      "Bash(git push --force *)",
+      "Bash(git push -f *)"
+    ]
+  }
+}
